@@ -5,23 +5,23 @@ const DEFAULT_RETRY = 2
 const CACHE_TTL = 1000 * 60 * 2
 const STALE_TTL = 1000 * 60 * 20
 
-type CacheEntry<T> = {
-  data: T
+type CacheEntry<Cache> = {
+  data: Cache
   timestamp: number
 }
 
 const responseCache = new Map<string, CacheEntry<unknown>>()
 const requestCache = new Map<string, Promise<unknown>>()
 
-function getCache<T>(url: string): CacheEntry<T> | undefined {
-  return responseCache.get(url) as CacheEntry<T> | undefined
+function getCache<GetCache>(url: string): CacheEntry<GetCache> | undefined {
+  return responseCache.get(url) as CacheEntry<GetCache> | undefined
 }
 
-function setCache<T>(url: string, data: T) {
+function setCache<SetCache>(url: string, data: SetCache) {
   responseCache.set(url, { data, timestamp: Date.now() })
 }
 
-async function fetchJson<T>(url: string, retries = DEFAULT_RETRY): Promise<T> {
+async function fetchJson<FetchJson>(url: string, retries = DEFAULT_RETRY): Promise<FetchJson> {
   let attempt = 0
   while (attempt <= retries) {
     try {
@@ -29,7 +29,7 @@ async function fetchJson<T>(url: string, retries = DEFAULT_RETRY): Promise<T> {
       if (!response.ok) {
         throw new Error(`Failed to fetch ${url}: ${response.status}`)
       }
-      return response.json() as Promise<T>
+      return response.json() as Promise<FetchJson>
     } catch (error) {
       attempt += 1
       if (attempt > retries) {
@@ -41,8 +41,8 @@ async function fetchJson<T>(url: string, retries = DEFAULT_RETRY): Promise<T> {
   throw new Error('Unable to complete request')
 }
 
-async function fetchWithCache<T>(url: string): Promise<T> {
-  const cached = getCache<T>(url)
+async function fetchWithCache<FetchWithCache>(url: string): Promise<FetchWithCache> {
+  const cached = getCache<FetchWithCache>(url)
   const isFresh = cached && Date.now() - cached.timestamp < CACHE_TTL
   const isStale = cached && Date.now() - cached.timestamp < STALE_TTL
 
@@ -52,10 +52,10 @@ async function fetchWithCache<T>(url: string): Promise<T> {
 
   const existingRequest = requestCache.get(url)
   if (existingRequest) {
-    return existingRequest as Promise<T>
+    return existingRequest as Promise<FetchWithCache>
   }
 
-  const request = fetchJson<T>(url)
+  const request = fetchJson<FetchWithCache>(url)
     .then((result) => {
       setCache(url, result)
       requestCache.delete(url)

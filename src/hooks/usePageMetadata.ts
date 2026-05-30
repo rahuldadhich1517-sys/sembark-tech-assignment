@@ -1,8 +1,7 @@
 import { useEffect } from 'react'
 
 const SITE_TITLE = 'Sembark Store'
-const DEFAULT_DESCRIPTION =
-  'Browse premium products with fast filtering, responsive design, and secure checkout-ready cart management.'
+const DEFAULT_DESCRIPTION = 'Browse premium products and add to cart.'
 
 type MetaProps = {
   title: string

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 
-type CacheEntry<T> = {
-  data: T
+type CacheEntry<Data> = {
+  data: Data
   timestamp: number
 }
 
@@ -13,8 +13,8 @@ type ApiOptions = {
   initialData?: unknown
 }
 
-type ApiState<T> = {
-  data: T | undefined
+type ApiState<ApiStateType> = {
+  data: ApiStateType | undefined
   error: string | null
   isLoading: boolean
   isFetching: boolean
@@ -26,11 +26,11 @@ export type { ApiState }
 const responseCache = new Map<string, CacheEntry<unknown>>()
 const requestCache = new Map<string, Promise<unknown>>()
 
-function getCache<T>(key: string): CacheEntry<T> | undefined {
-  return responseCache.get(key) as CacheEntry<T> | undefined
+function getCache<GetCache>(key: string): CacheEntry<GetCache> | undefined {
+  return responseCache.get(key) as CacheEntry<GetCache> | undefined
 }
 
-function setCache<T>(key: string, data: T): void {
+function setCache<SetCache>(key: string, data: SetCache): void {
   responseCache.set(key, { data, timestamp: Date.now() })
 }
 
@@ -38,7 +38,7 @@ function isCacheFresh(timestamp: number, ttl: number): boolean {
   return Date.now() - timestamp < ttl
 }
 
-async function retryFetch<T>(fetcher: () => Promise<T>, retries: number): Promise<T> {
+async function retryFetch<RetryFetch>(fetcher: () => Promise<RetryFetch>, retries: number): Promise<RetryFetch> {
   let attempt = 0
   let lastError: unknown
   while (attempt <= retries) {
@@ -56,10 +56,10 @@ async function retryFetch<T>(fetcher: () => Promise<T>, retries: number): Promis
   throw lastError
 }
 
-function loadRequest<T>(key: string, fetcher: () => Promise<T>): Promise<T> {
+function loadRequest<LoadRequest>(key: string, fetcher: () => Promise<LoadRequest>): Promise<LoadRequest> {
   const inFlight = requestCache.get(key)
   if (inFlight) {
-    return inFlight as Promise<T>
+    return inFlight as Promise<LoadRequest>
   }
 
   const promise = fetcher()
@@ -77,17 +77,17 @@ function loadRequest<T>(key: string, fetcher: () => Promise<T>): Promise<T> {
   return promise
 }
 
-export function useCachedApi<T>(cacheKey: string, fetcher: () => Promise<T>, options: ApiOptions = {}): ApiState<T> {
+export function useCachedApi<UseCachedApi>(cacheKey: string, fetcher: () => Promise<UseCachedApi>, options: ApiOptions = {}): ApiState<UseCachedApi> {
   const { staleTime = 1000 * 60 * 2, cacheTime = 1000 * 60 * 20, retry = 2, enabled = true, initialData } = options
-  const cacheEntry = getCache<T>(cacheKey)
+  const cacheEntry = getCache<UseCachedApi>(cacheKey)
   const initialValue = useMemo(() => {
     if (initialData !== undefined) {
-      return initialData as T
+      return initialData as UseCachedApi
     }
     return cacheEntry?.data
   }, [cacheEntry, initialData])
 
-  const [data, setData] = useState<T | undefined>(initialValue)
+  const [data, setData] = useState<UseCachedApi | undefined>(initialValue)
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState<boolean>(initialValue === undefined)
   const [isFetching, setIsFetching] = useState<boolean>(false)
@@ -118,7 +118,7 @@ export function useCachedApi<T>(cacheKey: string, fetcher: () => Promise<T>, opt
   useEffect(() => {
     if (!enabled) return
 
-    const entry = getCache<T>(cacheKey)
+    const entry = getCache<UseCachedApi>(cacheKey)
     const hasFreshData = entry && isCacheFresh(entry.timestamp, staleTime)
     const hasStaleData = entry && isCacheFresh(entry.timestamp, cacheTime)
 
