@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import type { Product } from '../types'
+import type { Product } from '../../types'
 import styles from './ProductCard.module.scss'
 
 export default function ProductCard({ product }: { product: Product }) {

@@ -1,6 +1,6 @@
 import type { Category, Product } from './types'
 
-const API_BASE = 'https://api.escuelajs.co/api/v1'
+const API_BASE = import.meta.env.VITE_API_BASE_URL
 
 async function fetchJson<T>(url: string): Promise<T> {
   const response = await fetch(url)

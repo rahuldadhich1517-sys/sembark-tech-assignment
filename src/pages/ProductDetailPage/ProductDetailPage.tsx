@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { fetchProductById } from '../api'
-import type { Product } from '../types'
-import { useCart } from '../context/CartContext'
+import { fetchProductById } from '../../api'
+import type { Product } from '../../types'
+import { useCart } from '../../context/CartContext'
 import styles from './ProductDetailPage.module.scss'
 
 export default function ProductDetailPage() {
@@ -65,7 +65,7 @@ export default function ProductDetailPage() {
               </button>
             </div>
             <Link to="/" className={styles.backLink}>
-              ← Back to home
+               Back to home
             </Link>
           </div>
         </section>
