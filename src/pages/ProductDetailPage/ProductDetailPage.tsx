@@ -5,8 +5,9 @@ import type { Product } from '../../types'
 import { useCart } from '../../context/CartContext'
 import { useCachedApi } from '../../hooks/useCachedApi'
 import { usePageMetadata } from '../../hooks/usePageMetadata'
-import LoadingSpinner from '../../components/LoadingSpinner/LoadingSpinner'
 import styles from './ProductDetailPage.module.scss'
+
+const TOAST_DURATION = 1600
 
 export default function ProductDetailPage() {
   const { id } = useParams()
@@ -14,34 +15,25 @@ export default function ProductDetailPage() {
   const { addToCart } = useCart()
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
 
-  const fetchProduct = useCallback(
-    () => fetchProductById(id ?? ''),
-    [id],
-  )
+  const fetchProduct = useCallback(() => fetchProductById(id ?? ''), [id])
 
-  const { data: product, error, isLoading } = useCachedApi<Product>(
-    `product-${id}`,
-    fetchProduct,
-    {
-      enabled: Boolean(id),
-      staleTime: 1000 * 60 * 10,
-      cacheTime: 1000 * 60 * 30,
-    },
-  )
+  const { data: product, error, isLoading } = useCachedApi<Product>(`product-${id}`, fetchProduct, {
+    enabled: Boolean(id),
+    staleTime: 1000 * 60 * 10,
+    cacheTime: 1000 * 60 * 30,
+  })
 
   usePageMetadata({
     title: product ? product.title : 'Product details',
     description: product?.description ?? 'Explore product details with premium ecommerce interactions.',
   })
 
-  const handleAddToCart = () => {
-    if (!product) {
-      return
-    }
+  const handleAddToCart = (): void => {
+    if (!product) return
 
     addToCart(product, 1)
     setSuccessMessage('Added to cart!')
-    window.setTimeout(() => setSuccessMessage(null), 1600)
+    window.setTimeout(() => setSuccessMessage(null), TOAST_DURATION)
   }
 
   return (
@@ -49,7 +41,7 @@ export default function ProductDetailPage() {
       <div className={styles.headerRow}>
         <div>
           <h1 className={styles.pageTitle}>Product details</h1>
-          <p className={styles.pageSubtitle}>Explore product specifications, pricing, and add to cart with confidence.</p>
+          <p className={styles.pageSubtitle}>Explore product specifications, pricing, and add to cart.</p>
         </div>
         <button type="button" className={styles.backButton} onClick={() => navigate(-1)}>
           Back
@@ -57,7 +49,7 @@ export default function ProductDetailPage() {
       </div>
 
       {isLoading ? (
-        <LoadingSpinner label="Loading product details…" />
+        <p>Loading...</p>
       ) : error ? (
         <p role="alert" className={styles.errorText}>Unable to load product details.</p>
       ) : product ? (

@@ -1,15 +1,15 @@
 import { useEffect } from 'react'
 
+const SITE_TITLE = 'Sembark Store'
+const DEFAULT_DESCRIPTION =
+  'Browse premium products with fast filtering, responsive design, and secure checkout-ready cart management.'
+
 type MetaProps = {
   title: string
   description?: string
 }
 
-const SITE_TITLE = 'Sembark Store'
-const DEFAULT_DESCRIPTION =
-  'Browse premium products with fast filtering, responsive design, and secure checkout-ready cart management.'
-
-function updateMetaTag(name: string, content: string) {
+function updateMetaTag(name: string, content: string): void {
   const element = document.querySelector(`meta[name="${name}"]`) as HTMLMetaElement | null
   if (element) {
     element.content = content
@@ -17,16 +17,19 @@ function updateMetaTag(name: string, content: string) {
     const meta = document.createElement('meta')
     meta.name = name
     meta.content = content
-    document.head.append(meta)
+    document.head.appendChild(meta)
   }
 }
 
-export function usePageMetadata({ title, description }: MetaProps) {
+export function usePageMetadata({ title, description }: MetaProps): void {
   useEffect(() => {
-    document.title = `${title} | ${SITE_TITLE}`
-    updateMetaTag('description', description ?? DEFAULT_DESCRIPTION)
-    updateMetaTag('og:title', `${title} | ${SITE_TITLE}`)
-    updateMetaTag('og:description', description ?? DEFAULT_DESCRIPTION)
+    const fullTitle = `${title} | ${SITE_TITLE}`
+    const finalDescription = description ?? DEFAULT_DESCRIPTION
+
+    document.title = fullTitle
+    updateMetaTag('description', finalDescription)
+    updateMetaTag('og:title', fullTitle)
+    updateMetaTag('og:description', finalDescription)
     updateMetaTag('og:type', 'website')
   }, [title, description])
 }

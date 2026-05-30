@@ -2,7 +2,11 @@ import { Link } from 'react-router-dom'
 import type { Product } from '../../types'
 import styles from './ProductCard.module.scss'
 
-export default function ProductCard({ product }: { product: Product }) {
+interface ProductCardProps {
+  product: Product
+}
+
+export default function ProductCard({ product }: ProductCardProps) {
   return (
     <Link to={`/product/${product.id}`} data-cy="product-card" className={styles.card}>
       <img src={product.images[0]} alt={product.title} className={styles.image} />

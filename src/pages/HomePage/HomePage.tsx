@@ -3,30 +3,46 @@ import { useSearchParams } from 'react-router-dom'
 import { fetchCategories, fetchProductsForCategories } from '../../api'
 import type { Category, Product } from '../../types'
 import ProductCard from '../../components/ProductCard/ProductCard'
-import SkeletonProductCard from '../../components/SkeletonProductCard/SkeletonProductCard'
-import LoadingSpinner from '../../components/LoadingSpinner/LoadingSpinner'
 import { useCachedApi } from '../../hooks/useCachedApi'
 import { usePageMetadata } from '../../hooks/usePageMetadata'
 import styles from './HomePage.module.scss'
 
 const PRODUCTS_PER_PAGE = 18
 
+type SortOption = 'price-asc' | 'price-desc' | ''
+
+function parseSelectedCategories(searchParams: URLSearchParams): number[] {
+  const value = searchParams.get('categories') ?? ''
+  return value
+    .split(',')
+    .map((item) => Number(item.trim()))
+    .filter((id) => Number.isFinite(id) && id > 0)
+}
+
+function parseSortOption(searchParams: URLSearchParams): SortOption {
+  const value = searchParams.get('sort') ?? ''
+  return value === 'price-asc' || value === 'price-desc' ? (value as SortOption) : ''
+}
+
+function sortProducts(products: Product[], sort: SortOption): Product[] {
+  if (!sort) return products
+  
+  const sorted = [...products]
+  return sort === 'price-asc' 
+    ? sorted.sort((a, b) => a.price - b.price)
+    : sorted.sort((a, b) => b.price - a.price)
+}
+
 export default function HomePage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const [currentPage, setCurrentPage] = useState(1)
 
-  const selectedCategoryIds = useMemo(() => {
-    const value = searchParams.get('categories') || ''
-    return value
-      .split(',')
-      .map((item) => Number(item.trim()))
-      .filter((id) => Number.isFinite(id) && id > 0)
-  }, [searchParams])
+  const selectedCategoryIds = useMemo(
+    () => parseSelectedCategories(searchParams),
+    [searchParams],
+  )
 
-  const sort = useMemo(() => {
-    const value = searchParams.get('sort') || ''
-    return value === 'price-asc' || value === 'price-desc' ? value : ''
-  }, [searchParams])
+  const sort = useMemo(() => parseSortOption(searchParams), [searchParams])
 
   const {
     data: categories = [],
@@ -60,26 +76,16 @@ export default function HomePage() {
 
   const loading = categoriesLoading || productsLoading
   const error = categoriesError || productsError
-
-  const sortedProducts = useMemo(() => {
-    if (sort === 'price-asc') {
-      return [...products].sort((a, b) => a.price - b.price)
-    }
-    if (sort === 'price-desc') {
-      return [...products].sort((a, b) => b.price - a.price)
-    }
-    return products
-  }, [products, sort])
-
+  const sortedProducts = useMemo(() => sortProducts(products, sort), [products, sort])
   const pageCount = Math.max(1, Math.ceil(sortedProducts.length / PRODUCTS_PER_PAGE))
   const paginatedProducts = sortedProducts.slice(
     (currentPage - 1) * PRODUCTS_PER_PAGE,
     currentPage * PRODUCTS_PER_PAGE,
   )
 
-  const updateSearchParams = (next: Record<string, string | null>) => {
+  const updateSearchParams = (updates: Record<string, string | null>): void => {
     const params = new URLSearchParams(searchParams)
-    Object.entries(next).forEach(([key, value]) => {
+    Object.entries(updates).forEach(([key, value]) => {
       if (value == null || value === '') {
         params.delete(key)
       } else {
@@ -89,7 +95,7 @@ export default function HomePage() {
     setSearchParams(params)
   }
 
-  const toggleCategory = (categoryId: number) => {
+  const toggleCategory = (categoryId: number): void => {
     const nextSelected = selectedCategoryIds.includes(categoryId)
       ? selectedCategoryIds.filter((id) => id !== categoryId)
       : [...selectedCategoryIds, categoryId]
@@ -97,7 +103,7 @@ export default function HomePage() {
     setCurrentPage(1)
   }
 
-  const clearFilters = () => {
+  const clearFilters = (): void => {
     updateSearchParams({ categories: null, sort: null })
     setCurrentPage(1)
   }
@@ -112,9 +118,7 @@ export default function HomePage() {
         <section className={styles.heroSection}>
           <div className={styles.heroCopy}>
             <h1 className={styles.heroTitle}>All products</h1>
-            <p className={styles.heroDescription}>
-              Filter by category and sort by price. The experience is fast, responsive, and your filters are reflected in the URL.
-            </p>
+            <p className={styles.heroDescription}>Filter by category and sort by price.</p>
           </div>
         </section>
 
@@ -135,26 +139,23 @@ export default function HomePage() {
             <div className={styles.panelSection}>
               <h3 className={styles.panelHeading}>Categories</h3>
               {categoriesLoading && !categories.length ? (
-                <LoadingSpinner label="Loading categories…" />
+                <p>Loading...</p>
               ) : (
                 <ul className={styles.categoryList} data-testid="category-list">
-                  {categories.map((category) => {
-                    const checked = selectedCategoryIds.includes(category.id)
-                    return (
-                      <li key={category.id} className={styles.categoryItem}>
-                        <label className={styles.categoryLabel}>
-                          <input
-                            type="checkbox"
-                            checked={checked}
-                            onChange={() => toggleCategory(category.id)}
-                            className={styles.categoryCheckbox}
-                            data-testid={`cat-${category.id}`}
-                          />
-                          <span>{category.name}</span>
-                        </label>
-                      </li>
-                    )
-                  })}
+                  {categories.map((category) => (
+                    <li key={category.id} className={styles.categoryItem}>
+                      <label className={styles.categoryLabel}>
+                        <input
+                          type="checkbox"
+                          checked={selectedCategoryIds.includes(category.id)}
+                          onChange={() => toggleCategory(category.id)}
+                          className={styles.categoryCheckbox}
+                          data-testid={String(category.id)}
+                        />
+                        <span>{category.name}</span>
+                      </label>
+                    </li>
+                  ))}
                 </ul>
               )}
               {categoriesError && <p className={styles.panelMessage}>Unable to load categories.</p>}
@@ -164,7 +165,7 @@ export default function HomePage() {
               <h3 className={styles.panelHeading}>Sort by</h3>
               <select
                 value={sort}
-                onChange={(event) => updateSearchParams({ sort: event.target.value || null })}
+                onChange={(e) => updateSearchParams({ sort: e.target.value || null })}
                 className={styles.sortSelect}
                 aria-label="Sort products"
               >
@@ -185,8 +186,8 @@ export default function HomePage() {
                   {loading ? 'Loading products...' : `${sortedProducts.length} products found`}
                 </h2>
                 <p className={styles.resultsNote}>
-                  {selectedCategoryIds.length
-                    ? 'Filtered by category. Share the link to preserve your selection.'
+                  {selectedCategoryIds.length > 0
+                    ? 'Filtered by category'
                     : 'Showing all available products.'}
                 </p>
               </div>
@@ -198,11 +199,9 @@ export default function HomePage() {
               </div>
             ) : loading && !sortedProducts.length ? (
               <div className={styles.skeletonGrid}>
-                {Array.from({ length: 6 }, (_, index) => (
-                  <SkeletonProductCard key={index} />
-                ))}
+                <p>Loading...</p>
               </div>
-            ) : paginatedProducts.length ? (
+            ) : paginatedProducts.length > 0 ? (
               <>
                 <div className={styles.grid}>
                   {paginatedProducts.map((product) => (
@@ -222,7 +221,7 @@ export default function HomePage() {
                     </button>
 
                     <div className={styles.pageList}>
-                      {Array.from({ length: pageCount }, (_, index) => index + 1).map((page) => (
+                      {Array.from({ length: pageCount }, (_, i) => i + 1).map((page) => (
                         <button
                           key={page}
                           type="button"

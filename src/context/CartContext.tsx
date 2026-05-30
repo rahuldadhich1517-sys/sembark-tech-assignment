@@ -1,6 +1,8 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import type { CartItem, Product } from '../types'
 
+const STORAGE_KEY = 'sembark_store_cart_v1'
+
 type CartState = {
   cartItems: CartItem[]
   totalCount: number
@@ -11,7 +13,6 @@ type CartState = {
 }
 
 const CartContext = createContext<CartState | undefined>(undefined)
-const STORAGE_KEY = 'sembark_store_cart_v1'
 
 function parseStoredCart(): CartItem[] {
   if (typeof window === 'undefined') {

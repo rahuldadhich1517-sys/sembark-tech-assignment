@@ -2,6 +2,10 @@ import { NavLink } from 'react-router-dom'
 import { useCart } from '../../context/CartContext'
 import styles from './NavBar.module.scss'
 
+function classNameIfActive(baseClass: string, isActive: boolean): string {
+  return isActive ? `${baseClass} ${styles.activeLink}` : baseClass
+}
+
 export default function NavBar() {
   const { totalCount } = useCart()
 
@@ -9,16 +13,23 @@ export default function NavBar() {
     <header className={styles.nav}>
       <div className={styles.container}>
         <NavLink to="/" className={styles.brand} aria-label="Sembark Store home">
-          <span>Sembark Store</span>
+          Sembark Store
         </NavLink>
 
         <nav className={styles.links} aria-label="Primary navigation">
-          <NavLink to="/" className={({ isActive }) => [styles.navLink, isActive ? styles.activeLink : ''].join(' ')}>
+          <NavLink
+            to="/"
+            className={({ isActive }) => classNameIfActive(styles.navLink, isActive)}
+          >
             Shop
           </NavLink>
 
-          <NavLink to="/cart" className={({ isActive }) => [styles.cartLink, isActive ? styles.activeLink : ''].join(' ')} data-cy="cart-link">
-            <span>Cart</span>
+          <NavLink
+            to="/cart"
+            className={({ isActive }) => classNameIfActive(styles.cartLink, isActive)}
+            data-cy="cart-link"
+          >
+            Cart
             {totalCount > 0 && (
               <span data-cy="cart-count" className={styles.badge} aria-live="polite">
                 {totalCount}

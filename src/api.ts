@@ -21,10 +21,6 @@ function setCache<T>(url: string, data: T) {
   responseCache.set(url, { data, timestamp: Date.now() })
 }
 
-function sleep(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms))
-}
-
 async function fetchJson<T>(url: string, retries = DEFAULT_RETRY): Promise<T> {
   let attempt = 0
   while (attempt <= retries) {
@@ -39,7 +35,7 @@ async function fetchJson<T>(url: string, retries = DEFAULT_RETRY): Promise<T> {
       if (attempt > retries) {
         throw error
       }
-      await sleep(250 * attempt)
+      await new Promise((resolve) => setTimeout(resolve, 250 * attempt))
     }
   }
   throw new Error('Unable to complete request')
@@ -104,7 +100,7 @@ export async function fetchProductsForCategories(categoryIds: number[]): Promise
     return fetchProducts()
   }
 
-  const requests = categoryIds.map((categoryId) => fetchProductsByCategory(categoryId, 100))
+  const requests = categoryIds.map((id) => fetchProductsByCategory(id, 100))
   const results = await Promise.all(requests)
   const uniqueProducts = new Map<number, Product>()
 

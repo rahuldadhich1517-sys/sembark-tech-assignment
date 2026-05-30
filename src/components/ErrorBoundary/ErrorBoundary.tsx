@@ -14,17 +14,15 @@ export default class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBo
     this.state = { hasError: false }
   }
 
-  static getDerivedStateFromError() {
+  static getDerivedStateFromError(): ErrorBoundaryState {
     return { hasError: true }
   }
 
-  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    // In production, this should be logged to a telemetry service.
-    // eslint-disable-next-line no-console
+  componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
     console.error('Unhandled render error:', error, errorInfo)
   }
 
-  render() {
+  render(): ReactNode {
     if (this.state.hasError) {
       return (
         <section role="alert" style={{ padding: '48px 24px', textAlign: 'center' }}>

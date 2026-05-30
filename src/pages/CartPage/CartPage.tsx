@@ -8,7 +8,7 @@ export default function CartPage() {
 
   usePageMetadata({
     title: 'Your Cart',
-    description: 'Review the products in your cart with fast quantity updates and local persistence.',
+    description: 'Review the products in your cart.',
   })
 
   return (
@@ -26,7 +26,9 @@ export default function CartPage() {
       {cartItems.length === 0 ? (
         <section className={styles.emptySection}>
           <h2 className={styles.emptyTitle}>Your cart is empty</h2>
-          <p className={styles.emptyText}>Browse products, add them to the cart, and your selection will stay saved.</p>
+          <p className={styles.emptyText}>
+            Browse products, add them to the cart, and your selection will stay saved.
+          </p>
         </section>
       ) : (
         <section className={styles.cartSection}>
@@ -71,7 +73,7 @@ export default function CartPage() {
                           aria-label={`Decrease quantity for ${item.product.title}`}
                           data-cy="decrement-cart-item"
                         >
-                          -
+                          −
                         </button>
                         <span className={styles.quantityValue}>{item.quantity}</span>
                         <button
@@ -100,6 +102,7 @@ export default function CartPage() {
               </tbody>
             </table>
           </div>
+
           <div className={styles.summary}>
             <div>
               <p className={styles.summaryText}>Total cart value</p>

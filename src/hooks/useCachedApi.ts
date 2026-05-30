@@ -21,6 +21,8 @@ type ApiState<T> = {
   refetch: () => void
 }
 
+export type { ApiState }
+
 const responseCache = new Map<string, CacheEntry<unknown>>()
 const requestCache = new Map<string, Promise<unknown>>()
 
@@ -28,11 +30,11 @@ function getCache<T>(key: string): CacheEntry<T> | undefined {
   return responseCache.get(key) as CacheEntry<T> | undefined
 }
 
-function setCache<T>(key: string, data: T) {
+function setCache<T>(key: string, data: T): void {
   responseCache.set(key, { data, timestamp: Date.now() })
 }
 
-function isFresh(timestamp: number, ttl: number) {
+function isCacheFresh(timestamp: number, ttl: number): boolean {
   return Date.now() - timestamp < ttl
 }
 
@@ -87,14 +89,12 @@ export function useCachedApi<T>(cacheKey: string, fetcher: () => Promise<T>, opt
 
   const [data, setData] = useState<T | undefined>(initialValue)
   const [error, setError] = useState<string | null>(null)
-  const [isLoading, setIsLoading] = useState<boolean>(() => !Boolean(initialValue))
+  const [isLoading, setIsLoading] = useState<boolean>(initialValue === undefined)
   const [isFetching, setIsFetching] = useState<boolean>(false)
   const hasLoadedRef = useRef(false)
 
-  const fetchData = async () => {
-    if (!enabled) {
-      return
-    }
+  const fetchData = async (): Promise<void> => {
+    if (!enabled) return
 
     setIsFetching(true)
     setError(null)
@@ -102,7 +102,6 @@ export function useCachedApi<T>(cacheKey: string, fetcher: () => Promise<T>, opt
     try {
       const result = await loadRequest(cacheKey, () => retryFetch(fetcher, retry))
       setData(result)
-      setError(null)
     } catch (exception) {
       const errorMessage = exception instanceof Error ? exception.message : 'Unknown error'
       setError(errorMessage)
@@ -117,13 +116,11 @@ export function useCachedApi<T>(cacheKey: string, fetcher: () => Promise<T>, opt
   }
 
   useEffect(() => {
-    if (!enabled) {
-      return undefined
-    }
+    if (!enabled) return
 
     const entry = getCache<T>(cacheKey)
-    const hasFreshData = entry && isFresh(entry.timestamp, staleTime)
-    const hasStaleData = entry && isFresh(entry.timestamp, cacheTime)
+    const hasFreshData = entry && isCacheFresh(entry.timestamp, staleTime)
+    const hasStaleData = entry && isCacheFresh(entry.timestamp, cacheTime)
 
     if (entry) {
       setData(entry.data)
@@ -140,7 +137,7 @@ export function useCachedApi<T>(cacheKey: string, fetcher: () => Promise<T>, opt
     }
   }, [cacheKey, enabled, staleTime, cacheTime, retry, fetcher])
 
-  const refetch = () => {
+  const refetch = (): void => {
     setIsLoading(true)
     fetchData().catch(() => {})
   }
