@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import type { CartItem, Product } from '../types'
 
 const STORAGE_KEY = 'sembark_store_cart_v1'
@@ -21,6 +21,10 @@ function parseStoredCart(): CartItem[] {
 
   try {
     const stored = localStorage.getItem(STORAGE_KEY)
+    try {
+      // eslint-disable-next-line no-console
+      console.debug('CartContext: stored cart raw', stored)
+    } catch {}
     if (!stored) {
       return []
     }
@@ -52,14 +56,24 @@ function parseStoredCart(): CartItem[] {
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const [cartItems, setCartItems] = useState<CartItem[]>([])
+  const hasHydrated = useRef(false)
 
   useEffect(() => {
     setCartItems(parseStoredCart())
   }, [])
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(cartItems))
-  }, [cartItems])
+    if (!hasHydrated.current) {
+      hasHydrated.current = true
+      return
+    }
+    try {
+      const raw = JSON.stringify(cartItems)
+      localStorage.setItem(STORAGE_KEY, raw)
+    } catch {
+      console.warn('CartContext: failed to persist cart items to localStorage')
+    }
+  }, [cartItems, hasHydrated])
 
   useEffect(() => {
     const handleStorage = (event: StorageEvent) => {
@@ -86,31 +100,60 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const addToCart = useCallback((product: Product, quantity = 1) => {
     setCartItems((current) => {
       const existing = current.find((item) => item.product.id === product.id)
-      if (existing) {
-        return current.map((item) =>
-          item.product.id === product.id
-            ? { ...item, quantity: item.quantity + quantity }
-            : item,
-        )
+      const next = existing
+        ? current.map((item) =>
+            item.product.id === product.id
+              ? { ...item, quantity: item.quantity + quantity }
+              : item,
+          )
+        : [...current, { product, quantity }]
+
+      try {
+        // eslint-disable-next-line no-console
+        console.debug('CartContext: write in addToCart', JSON.stringify(next))
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
+      } catch {
+        console.warn('CartContext: failed to persist cart items to localStorage')
       }
-      return [...current, { product, quantity }]
+
+      return next
     })
   }, [])
 
   const updateQuantity = useCallback((productId: number, quantity: number) => {
-    setCartItems((current) =>
-      current
+    setCartItems((current) => {
+      const next = current
         .map((item) =>
           item.product.id === productId
             ? { ...item, quantity: Math.max(0, quantity) }
             : item,
         )
-        .filter((item) => item.quantity > 0),
-    )
+        .filter((item) => item.quantity > 0)
+
+      try {
+        // eslint-disable-next-line no-console
+        console.debug('CartContext: write in updateQuantity', JSON.stringify(next))
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
+      } catch {
+        console.warn('CartContext: failed to persist cart items to localStorage')
+      }
+
+      return next
+    })
   }, [])
 
   const removeFromCart = useCallback((productId: number) => {
-    setCartItems((current) => current.filter((item) => item.product.id !== productId))
+    setCartItems((current) => {
+      const next = current.filter((item) => item.product.id !== productId)
+      try {
+        // eslint-disable-next-line no-console
+        console.debug('CartContext: write in removeFromCart', JSON.stringify(next))
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
+      } catch {
+        console.warn('CartContext: failed to persist cart items to localStorage')
+      }
+      return next
+    })
   }, [])
 
   const value = useMemo(

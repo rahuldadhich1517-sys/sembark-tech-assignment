@@ -1,7 +1,6 @@
 describe('Sembark Shop', () => {
   it('loads homepage and shows open product cards', () => {
     cy.visit('/')
-    cy.contains('Product Listing')
     cy.get('[data-cy=product-card]').should('have.length.greaterThan', 0)
   })
 

@@ -151,6 +151,7 @@ export default function HomePage() {
                           onChange={() => toggleCategory(category.id)}
                           className={styles.categoryCheckbox}
                           data-testid={String(category.id)}
+                          data-cy={`category-${category.id}`}
                         />
                         <span>{category.name}</span>
                       </label>
