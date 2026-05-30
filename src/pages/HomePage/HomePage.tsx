@@ -1,18 +1,18 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { fetchCategories, fetchProductsForCategories } from '../../api'
 import type { Category, Product } from '../../types'
 import ProductCard from '../../components/ProductCard/ProductCard'
+import SkeletonProductCard from '../../components/SkeletonProductCard/SkeletonProductCard'
+import LoadingSpinner from '../../components/LoadingSpinner/LoadingSpinner'
+import { useCachedApi } from '../../hooks/useCachedApi'
+import { usePageMetadata } from '../../hooks/usePageMetadata'
 import styles from './HomePage.module.scss'
 
 const PRODUCTS_PER_PAGE = 18
 
 export default function HomePage() {
   const [searchParams, setSearchParams] = useSearchParams()
-  const [categories, setCategories] = useState<Category[]>([])
-  const [products, setProducts] = useState<Product[]>([])
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
 
   const selectedCategoryIds = useMemo(() => {
@@ -28,20 +28,38 @@ export default function HomePage() {
     return value === 'price-asc' || value === 'price-desc' ? value : ''
   }, [searchParams])
 
-  useEffect(() => {
-    fetchCategories()
-      .then(setCategories)
-      .catch(() => setError('Unable to load categories.'))
-  }, [])
+  const {
+    data: categories = [],
+    error: categoriesError,
+    isLoading: categoriesLoading,
+  } = useCachedApi<Category[]>('categories', fetchCategories, {
+    staleTime: 1000 * 60 * 5,
+    cacheTime: 1000 * 60 * 30,
+  })
 
-  useEffect(() => {
-    setLoading(true)
-    setError(null)
-    fetchProductsForCategories(selectedCategoryIds)
-      .then(setProducts)
-      .catch(() => setError('Unable to load products.'))
-      .finally(() => setLoading(false))
-  }, [selectedCategoryIds])
+  const productsKey = `products-${selectedCategoryIds.join(',')}`
+  const fetchProducts = useCallback(
+    () => fetchProductsForCategories(selectedCategoryIds),
+    [selectedCategoryIds],
+  )
+
+  const {
+    data: products = [],
+    error: productsError,
+    isLoading: productsLoading,
+    isFetching: productsFetching,
+  } = useCachedApi<Product[]>(productsKey, fetchProducts, {
+    staleTime: 1000 * 60 * 3,
+    cacheTime: 1000 * 60 * 15,
+  })
+
+  usePageMetadata({
+    title: 'All products',
+    description: 'Discover premium products with category filtering, smart caching, and responsive browsing.',
+  })
+
+  const loading = categoriesLoading || productsLoading
+  const error = categoriesError || productsError
 
   const sortedProducts = useMemo(() => {
     if (sort === 'price-asc') {
@@ -71,29 +89,31 @@ export default function HomePage() {
     setSearchParams(params)
   }
 
-  useEffect(() => {
-    setCurrentPage(1)
-  }, [selectedCategoryIds, sort])
-
   const toggleCategory = (categoryId: number) => {
     const nextSelected = selectedCategoryIds.includes(categoryId)
       ? selectedCategoryIds.filter((id) => id !== categoryId)
       : [...selectedCategoryIds, categoryId]
     updateSearchParams({ categories: nextSelected.length ? nextSelected.join(',') : null })
+    setCurrentPage(1)
   }
 
   const clearFilters = () => {
     updateSearchParams({ categories: null, sort: null })
+    setCurrentPage(1)
   }
 
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [sort])
+
   return (
-    <main className={styles.page}>
+    <main className={`${styles.page} ${styles.pageFade}`}>
       <div className={styles.container}>
         <section className={styles.heroSection}>
           <div className={styles.heroCopy}>
             <h1 className={styles.heroTitle}>All products</h1>
             <p className={styles.heroDescription}>
-              Filter by category and sort by price. Your selection is reflected in the URL.
+              Filter by category and sort by price. The experience is fast, responsive, and your filters are reflected in the URL.
             </p>
           </div>
         </section>
@@ -101,25 +121,28 @@ export default function HomePage() {
         <div className={styles.layout}>
           <aside className={styles.sidebar}>
             <div className={styles.sidebarHeader}>
-              <div className={styles.sidebarTitle}>Filters</div>
+              <div>
+                <p className={styles.sidebarLabel}>Filters</p>
+                <h2 className={styles.sidebarTitle}>Refine your search</h2>
+              </div>
               {(selectedCategoryIds.length > 0 || sort) && (
                 <button type="button" className={styles.clearButton} onClick={clearFilters}>
-                  Reset filters
+                  Reset
                 </button>
               )}
             </div>
 
             <div className={styles.panelSection}>
-              <h2 className={styles.panelHeading}>Categories</h2>
-              {categories.length === 0 && !error ? (
-                <p className={styles.panelMessage}>Loading…</p>
+              <h3 className={styles.panelHeading}>Categories</h3>
+              {categoriesLoading && !categories.length ? (
+                <LoadingSpinner label="Loading categories…" />
               ) : (
                 <ul className={styles.categoryList} data-testid="category-list">
                   {categories.map((category) => {
                     const checked = selectedCategoryIds.includes(category.id)
                     return (
                       <li key={category.id} className={styles.categoryItem}>
-                        <label>
+                        <label className={styles.categoryLabel}>
                           <input
                             type="checkbox"
                             checked={checked}
@@ -134,14 +157,16 @@ export default function HomePage() {
                   })}
                 </ul>
               )}
+              {categoriesError && <p className={styles.panelMessage}>Unable to load categories.</p>}
             </div>
 
             <div className={styles.panelSection}>
-              <h2 className={styles.panelHeading}>Sort by</h2>
+              <h3 className={styles.panelHeading}>Sort by</h3>
               <select
                 value={sort}
                 onChange={(event) => updateSearchParams({ sort: event.target.value || null })}
                 className={styles.sortSelect}
+                aria-label="Sort products"
               >
                 <option value="">Default</option>
                 <option value="price-asc">Price: Low to High</option>
@@ -153,6 +178,9 @@ export default function HomePage() {
           <section className={styles.productSection}>
             <div className={styles.resultsHeader}>
               <div>
+                <p className={styles.resultStatus} aria-live="polite">
+                  {productsFetching ? 'Refreshing results…' : 'Filtered results'}
+                </p>
                 <h2 className={styles.resultsCount}>
                   {loading ? 'Loading products...' : `${sortedProducts.length} products found`}
                 </h2>
@@ -165,9 +193,15 @@ export default function HomePage() {
             </div>
 
             {error ? (
-              <p className={styles.errorText}>{error}</p>
-            ) : loading ? (
-              <div className={styles.emptyState}>Loading products…</div>
+              <div className={styles.errorPanel} role="alert">
+                <p>Unable to load products. Please try again later.</p>
+              </div>
+            ) : loading && !sortedProducts.length ? (
+              <div className={styles.skeletonGrid}>
+                {Array.from({ length: 6 }, (_, index) => (
+                  <SkeletonProductCard key={index} />
+                ))}
+              </div>
             ) : paginatedProducts.length ? (
               <>
                 <div className={styles.grid}>
@@ -195,6 +229,7 @@ export default function HomePage() {
                           className={`${styles.pageButton} ${
                             page === currentPage ? styles.pageButtonActive : ''
                           }`}
+                          aria-current={page === currentPage ? 'page' : undefined}
                           onClick={() => setCurrentPage(page)}
                         >
                           {page}
@@ -214,7 +249,9 @@ export default function HomePage() {
                 )}
               </>
             ) : (
-              <p className={styles.emptyState}>No products match these filters.</p>
+              <div className={styles.emptyState} role="status">
+                <p>No products match these filters.</p>
+              </div>
             )}
           </section>
         </div>

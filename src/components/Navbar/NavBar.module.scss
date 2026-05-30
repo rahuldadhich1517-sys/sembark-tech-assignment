@@ -3,19 +3,20 @@
   top: 0;
   z-index: 40;
   width: 100%;
-  border-bottom: 1px solid #e5e7eb;
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(209, 213, 219, 0.9);
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(16px);
 }
 
 .container {
-  max-width: 1152px;
+  max-width: 1240px;
   margin: 0 auto;
-  padding: 12px 16px;
+  padding: 16px 24px;
 
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 16px;
 }
 
 .brand {
@@ -38,47 +39,34 @@
 .links {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 10px;
 }
 
-.navLink {
-  padding: 8px 12px;
-  border-radius: 8px;
-
-  color: #6b7280;
-  text-decoration: none;
-  font-size: 14px;
-  font-weight: 500;
-
-  transition: all 0.2s ease;
-
-  &:hover {
-    background: #f3f4f6;
-    color: #111827;
-  }
-}
-
+.navLink,
 .cartLink {
-  position: relative;
-
   display: inline-flex;
   align-items: center;
   gap: 8px;
-
-  padding: 8px 12px;
-  border-radius: 8px;
-
-  color: #6b7280;
+  padding: 10px 14px;
+  border-radius: 14px;
   text-decoration: none;
-  font-size: 14px;
-  font-weight: 500;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #475569;
+  transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
 
-  transition: all 0.2s ease;
+.navLink:hover,
+.cartLink:hover {
+  background: #f8fafc;
+  color: var(--text);
+  transform: translateY(-1px);
+}
 
-  &:hover {
-    background: #f3f4f6;
-    color: #111827;
-  }
+.activeLink {
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
 }
 
 .cartIcon {
@@ -94,12 +82,9 @@
   align-items: center;
 
   border-radius: 9999px;
-
-  background: #111827;
+  background: var(--text);
   color: #ffffff;
-
-  font-size: 11px;
-  font-weight: 600;
-
+  font-size: 0.75rem;
+  font-weight: 700;
   padding: 0 6px;
 }

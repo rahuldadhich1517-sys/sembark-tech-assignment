@@ -3,3 +3,33 @@
   background: var(--bg);
   color: var(--text);
 }
+
+.content {
+  width: min(100%, 1240px);
+  margin: 0 auto;
+  padding: 24px 20px 40px;
+}
+
+.notFound {
+  padding: 120px 24px;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.notFound h1 {
+  margin: 0 0 16px;
+  font-size: clamp(2.5rem, 4vw, 3.5rem);
+  color: var(--text);
+}
+
+.notFound p {
+  margin: 0 auto;
+  max-width: 36rem;
+  line-height: 1.8;
+}
+
+@media (max-width: 640px) {
+  .content {
+    padding: 16px 14px 32px;
+  }
+}

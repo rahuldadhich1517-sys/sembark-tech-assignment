@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+import { NavLink } from 'react-router-dom'
 import { useCart } from '../../context/CartContext'
 import styles from './NavBar.module.scss'
 
@@ -8,28 +8,23 @@ export default function NavBar() {
   return (
     <header className={styles.nav}>
       <div className={styles.container}>
-        <Link to="/" className={styles.brand}>
+        <NavLink to="/" className={styles.brand} aria-label="Sembark Store home">
           <span>Sembark Store</span>
-        </Link>
+        </NavLink>
 
-        <nav className={styles.links}>
-          <Link to="/" className={styles.navLink}>
+        <nav className={styles.links} aria-label="Primary navigation">
+          <NavLink to="/" className={({ isActive }) => [styles.navLink, isActive ? styles.activeLink : ''].join(' ')}>
             Shop
-          </Link>
+          </NavLink>
 
-          <Link
-            to="/cart"
-            className={styles.cartLink}
-            data-cy="cart-link"
-          >
+          <NavLink to="/cart" className={({ isActive }) => [styles.cartLink, isActive ? styles.activeLink : ''].join(' ')} data-cy="cart-link">
             <span>Cart</span>
-
             {totalCount > 0 && (
-              <span data-cy="cart-count" className={styles.badge}>
+              <span data-cy="cart-count" className={styles.badge} aria-live="polite">
                 {totalCount}
               </span>
-            )}  
-          </Link>
+            )}
+          </NavLink>
         </nav>
       </div>
     </header>
