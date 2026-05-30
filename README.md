@@ -1,73 +1,94 @@
-# React + TypeScript + Vite
+# Sembark Tech Assignment
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A small React + TypeScript + Vite e-commerce demo with product listing, category filters, sorting, cart management, and product detail navigation.
 
-Currently, two official plugins are available:
+## Prerequisites
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- Node.js 18+ or compatible LTS
+- npm 10+ (or yarn/pnpm if preferred)
 
-## React Compiler
+## Setup
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+1. Clone the repository.
+2. Install dependencies:
 
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Environment files
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+This project uses Vite mode-specific environment files:
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+- `.env.development`
+- `.env.staging`
+- `.env.production`
+
+Each file is loaded when running Vite with the corresponding mode.
+
+## Run locally
+
+Start the development server:
+
+```bash
+npm run dev
 ```
+
+Open the app at `http://localhost:5173`.
+
+## Build
+
+Build for production:
+
+```bash
+npm run build
+```
+
+Build for development mode:
+
+```bash
+npm run build:development
+```
+
+Build for staging mode:
+
+```bash
+npm run build:staging
+```
+
+## Preview
+
+Preview the production build:
+
+```bash
+npm run preview
+```
+
+Preview the staging build:
+
+```bash
+npm run preview:staging
+```
+
+## Testing
+
+Run Cypress end-to-end tests:
+
+```bash
+npm run test:e2e
+```
+
+## Project structure
+
+- `src/` – React application source
+- `src/pages/` – page components
+- `src/components/` – shared UI components
+- `src/context/` – application state providers
+- `src/api.ts` – API helper methods
+- `src/types.ts` – TypeScript types
+
+## Notes
+
+- Filters and sorting state are preserved in the URL to support refresh, back navigation, and shareable links.
+- Cart quantities can be adjusted directly in the cart page.
+- Product items in the cart link to their detail pages.

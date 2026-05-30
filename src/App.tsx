@@ -3,10 +3,11 @@ import NavBar from './components/NavBar'
 import HomePage from './pages/HomePage'
 import ProductDetailPage from './pages/ProductDetailPage'
 import CartPage from './pages/CartPage'
+import styles from './App.module.scss'
 
 function App() {
   return (
-    <div style={{ minHeight: '100vh', background: '#f8fafc', color: '#111827' }}>
+    <div className={styles.appRoot}>
       <NavBar />
       <Routes>
         <Route path="/" element={<HomePage />} />

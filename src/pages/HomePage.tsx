@@ -1,45 +1,9 @@
-import { type CSSProperties, useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { fetchCategories, fetchProductsForCategories } from '../api'
 import type { Category, Product } from '../types'
 import ProductCard from '../components/ProductCard'
-
-const pageStyle: CSSProperties = {
-  padding: '24px 20px',
-  display: 'flex',
-  flexDirection: 'column',
-  gap: 24,
-}
-
-const gridStyle: CSSProperties = {
-  display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
-  gap: 18,
-}
-
-const filterPanel: CSSProperties = {
-  display: 'grid',
-  gap: 16,
-  borderRadius: 18,
-  padding: 20,
-  background: '#fff',
-  boxShadow: '0 12px 36px rgba(15, 23, 42, 0.08)',
-}
-
-const controlsRow: CSSProperties = {
-  display: 'flex',
-  flexWrap: 'wrap',
-  gap: 12,
-  alignItems: 'center',
-}
-
-const buttonStyle: CSSProperties = {
-  borderRadius: 999,
-  border: '1px solid #d1d5db',
-  padding: '10px 16px',
-  background: '#f8fafc',
-  cursor: 'pointer',
-}
+import styles from './HomePage.module.scss'
 
 export default function HomePage() {
   const [searchParams, setSearchParams] = useSearchParams()
@@ -47,6 +11,8 @@ export default function HomePage() {
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false)
+  const dropdownRef = useRef<HTMLDivElement | null>(null)
 
   const selectedCategoryIds = useMemo(() => {
     const value = searchParams.get('categories') || ''
@@ -58,6 +24,11 @@ export default function HomePage() {
 
   const sort = searchParams.get('sort') || 'default'
 
+  const selectedCategories = useMemo(
+    () => categories.filter((category) => selectedCategoryIds.includes(category.id)),
+    [categories, selectedCategoryIds],
+  )
+
   useEffect(() => {
     fetchCategories()
       .then(setCategories)
@@ -68,9 +39,7 @@ export default function HomePage() {
     setLoading(true)
     setError(null)
     fetchProductsForCategories(selectedCategoryIds)
-      .then((result) => {
-        setProducts(result)
-      })
+      .then(setProducts)
       .catch(() => setError('Unable to load products.'))
       .finally(() => setLoading(false))
   }, [selectedCategoryIds])
@@ -94,8 +63,19 @@ export default function HomePage() {
         params.set(key, value)
       }
     })
-    setSearchParams(params, { replace: true })
+    setSearchParams(params)
   }
+
+  useEffect(() => {
+    if (!categoryDropdownOpen) return
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setCategoryDropdownOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [categoryDropdownOpen])
 
   const toggleCategory = (categoryId: number) => {
     const nextSelected = selectedCategoryIds.includes(categoryId)
@@ -109,25 +89,57 @@ export default function HomePage() {
   }
 
   return (
-    <main style={pageStyle}>
+    <main className={styles.page}>
       <section>
-        <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+        <div className={styles.headerRow}>
           <div>
-            <h1 style={{ margin: 0, fontSize: 36 }}>Product Listing</h1>
-            <p style={{ margin: '12px 0 0', color: '#4b5563', maxWidth: 560 }}>
-              Browse trending products, filter by category, and sort prices. The product selection is preserved in the URL.
-            </p>
+            <h1 className={styles.pageTitle}>Product Listing</h1>
           </div>
-          <div style={controlsRow}>
-            <button type="button" style={buttonStyle} onClick={clearFilters}>
-              Reset filters
-            </button>
-            <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: '#fff', padding: '10px 14px', borderRadius: 12, border: '1px solid #d1d5db' }}>
+          <div className={styles.controlsRow}>
+            <div ref={dropdownRef} className={styles.categoryWrapper}>
+              <button
+                type="button"
+                onClick={() => setCategoryDropdownOpen((value) => !value)}
+                className={styles.categoryButton}
+                aria-haspopup="listbox"
+                aria-expanded={categoryDropdownOpen}
+              >
+                <span className={styles.categoryButtonContent}>
+                  <span className={styles.categoryButtonLabel}>Categories</span>
+                  <span className={styles.categoryButtonText}>
+                    {selectedCategoryIds.length ? `${selectedCategoryIds.length} selected` : 'All categories'}
+                  </span>
+                </span>
+                <span>{categoryDropdownOpen ? '▴' : '▾'}</span>
+              </button>
+              {categoryDropdownOpen ? (
+                <div className={styles.categoryDropdown}>
+                  {categories.map((category) => {
+                    const active = selectedCategoryIds.includes(category.id)
+                    return (
+                      <label
+                        key={category.id}
+                        className={`${styles.dropdownItem} ${active ? styles.dropdownItemActive : ''}`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={active}
+                          onChange={() => toggleCategory(category.id)}
+                          className={styles.dropdownInput}
+                        />
+                        <span>{category.name}</span>
+                      </label>
+                    )
+                  })}
+                </div>
+              ) : null}
+            </div>
+            <label className={styles.filterLabel}>
               Sort
               <select
                 value={sort}
                 onChange={(event) => updateSearchParams({ sort: event.target.value || null })}
-                style={{ border: 'none', outline: 'none', background: 'transparent', fontWeight: 600 }}
+                className={styles.sortSelect}
                 data-cy="sort-select"
               >
                 <option value="default">Recommended</option>
@@ -135,52 +147,46 @@ export default function HomePage() {
                 <option value="price_desc">Price: High to Low</option>
               </select>
             </label>
+            <button type="button" className={styles.resetButton} onClick={clearFilters}>
+              Reset filters
+            </button>
           </div>
         </div>
       </section>
 
-      <section style={{ display: 'grid', gap: 20 }}>
-        <div style={filterPanel}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, alignItems: 'center' }}>
-            <h2 style={{ margin: 0, fontSize: 22 }}>Categories</h2>
-            <span style={{ color: '#6b7280' }}>{selectedCategoryIds.length} selected</span>
+      <section className={styles.mainSection}>
+        <div className={styles.filterPanel}>
+          <div className={styles.filterPanelHeader}>
+            <div>
+              <h2 className={styles.filterTitle}>Categories</h2>
+              <p className={styles.filterDescription}>
+                Select one or more categories from the dropdown above to filter products instantly.
+              </p>
+            </div>
+            <span className={styles.selectedCount}>{selectedCategoryIds.length} selected</span>
           </div>
-          <div style={{ display: 'grid', gap: 10, gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))' }}>
-            {categories.map((category) => {
-              const active = selectedCategoryIds.includes(category.id)
-              return (
-                <button
-                  type="button"
-                  key={category.id}
-                  onClick={() => toggleCategory(category.id)}
-                  style={{
-                    textAlign: 'left',
-                    borderRadius: 14,
-                    padding: '12px 14px',
-                    border: `1px solid ${active ? '#2563eb' : '#d1d5db'}`,
-                    background: active ? '#eff6ff' : '#fff',
-                    color: '#111827',
-                    cursor: 'pointer',
-                  }}
-                  data-cy={`category-${category.id}`}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <span>{category.name}</span>
-                    {active ? <strong style={{ color: '#2563eb' }}>✓</strong> : null}
-                  </div>
-                </button>
-              )
-            })}
-          </div>
+          {selectedCategories.length ? (
+            <div className={styles.tagRow}>
+              {selectedCategories.map((category) => (
+                <span key={category.id} className={styles.tag}>
+                  {category.name}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <p className={styles.filterEmpty}>
+              Choose categories to narrow results. Your selection stays in the URL for refresh, sharing, and browser navigation.
+            </p>
+          )}
         </div>
 
         <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, alignItems: 'center' }}>
+          <div className={styles.resultsHeader}>
             <div>
-              <h2 style={{ margin: 0, fontSize: 22 }}>
+              <h2 className={styles.resultsCount}>
                 {loading ? 'Loading products...' : `${sortedProducts.length} products found`}
               </h2>
-              <p style={{ margin: '8px 0 0', color: '#6b7280' }}>
+              <p className={styles.resultsNote}>
                 {selectedCategoryIds.length
                   ? 'Filtered by category. Share the link to preserve your selection.'
                   : 'Showing all available products.'}
@@ -188,13 +194,17 @@ export default function HomePage() {
             </div>
           </div>
           {error ? (
-            <p style={{ color: '#dc2626', marginTop: 16 }}>{error}</p>
+            <p className={styles.errorText}>{error}</p>
           ) : (
-            <div style={{ marginTop: 16 }}>
+            <div className={styles.resultsWrap}>
               {loading ? (
                 <p>Loading products...</p>
               ) : (
-                <div style={gridStyle}>{sortedProducts.map((product) => <ProductCard key={product.id} product={product} />)}</div>
+                <div className={styles.grid}>
+                  {sortedProducts.map((product) => (
+                    <ProductCard key={product.id} product={product} />
+                  ))}
+                </div>
               )}
             </div>
           )}
